@@ -13,10 +13,10 @@ const backupDataCJ = async () => {
     console.log("Now time update!");
     console.log("--------Fb ads Acounts--------");
     await getListAdsAccount();
-    await getAccountLevelReport();
+    // await getAccountLevelReport();
     await getCampaignLevelReport();
-    await getAdSetLevelReport();
-    await getAdLevelReport();
+    // await getAdSetLevelReport();
+    // await getAdLevelReport();
 };
 
 cron.schedule("15 0 * * *", backupDataCJ, {

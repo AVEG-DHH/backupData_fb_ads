@@ -6,38 +6,62 @@ let LARK_ACCESS_TOKEN = "danghuuhung";
 let listNewAdsAccounts = [];
 let listUpdateAdsAccounts = [];
 
-const callAPIInsightsCampaign = async (adAccountId) => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // getMonth() trả về từ 0-11 nên cần +1
-    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate(); // Lấy số ngày của tháng hiện tại
+let date_start = "";
+let date_stop = "";
 
+const callAPIInsightsCampaignFirst = async (adAccountId) => {
+    const urlInsights = `https://graph.facebook.com/v19.0/${adAccountId}/insights/`;
+    try {
+        const response = await axios.get(urlInsights, {
+            params: {
+                fields: "account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,impressions,clicks,spend,actions,action_values,cost_per_action_type,ctr,cpc,reach,conversion_values",
+                level: "campaign",
+                access_token: process.env.ACCESS_TOKEN_FB_ADS
+            }
+        });
+        date_start = response.data.data[0].date_start;
+        date_stop = response.data.data[0].date_stop;
+    } catch (error) {
+        console.error(`🚨 Lỗi khi gọi API`, error.response?.data || error.message);
+    }
+};
+
+const callAPIInsightsCampaign = async (adAccountId) => {
+    let currentDate = new Date(date_start);
+    const lastDate = new Date(date_stop);
     let allData = [];
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = `${currentYear}-${currentMonth.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+    while (currentDate <= lastDate) {
+        const date = currentDate.toISOString().split("T")[0]; // Format YYYY-MM-DD
+        console.log(`📅 Đang lấy dữ liệu cho ngày: ${date}`);
+
         const urlInsights = `https://graph.facebook.com/v19.0/${adAccountId}/insights/`;
 
         try {
             const response = await axios.get(urlInsights, {
                 params: {
-                    fields: "account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,impressions,clicks,spend,ctr,cpc,reach,conversion_values",
+                    fields: "account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,impressions,clicks,spend,actions,action_values,cost_per_action_type,ctr,cpc,reach,conversion_values",
                     level: "campaign",
                     time_range: JSON.stringify({ "since": date, "until": date }),
                     access_token: process.env.ACCESS_TOKEN_FB_ADS
                 }
             });
 
-            allData.push(...response.data.data); // Gom dữ liệu lại
+            if (response.data.data.length > 0) {
+                allData.push(...response.data.data); // Gom dữ liệu vào mảng
+            }
         } catch (error) {
-            console.error(`🚨 Lỗi khi gọi API cho ngày ${date}:`, error.response?.data || error.message);
+            console.error(`🚨 Lỗi khi gọi API ngày ${date}:`, error.response?.data || error.message);
         }
+
+        // Tăng ngày hiện tại lên 1
+        currentDate.setDate(currentDate.getDate() + 1);
     }
 
     return allData;
 };
 
-const LARK_API_FB_ADS = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN}/records`;
+const LARK_API_FB_ADS = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`;
 const getDataLarkBase = async () => {
     let allDataLB = [];
     let pageToken = "" || null;
@@ -112,8 +136,8 @@ const getDataNewUpdate = async (listAdsAccounts_metadevlopers, listAdsAccounts_l
 
 const sendLarkAdsAccountsNew = async (fields) => {
     try {
-        return await axios.post(
-            `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN}/records`,
+        const res = await axios.post(
+            `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`,
             { fields },
             {
                 headers: {
@@ -122,6 +146,7 @@ const sendLarkAdsAccountsNew = async (fields) => {
                 }
             }
         );
+        return res;
     } catch (error) {
         // 📌 Nếu token hết hạn (code: 99991663), lấy token mới rồi thử lại
         if (error.response?.data?.code === 99991663 || error.response?.data?.code === 99991661 || error.response?.data?.code === 99991668) {
@@ -133,20 +158,9 @@ const sendLarkAdsAccountsNew = async (fields) => {
 };
 
 const convertDataForNew = (data) => {
-    // Lấy tổng giá trị chuyển đổi từ mua hàng (Purchases conversion value)
-    const purchaseValueAction = data.action_values?.find(action => action.action_type === "purchase") || {};
-    const purchaseConversionValue = parseFloat(purchaseValueAction.value) || 0;
-
-    // Lấy số lượng mua hàng (Purchases)
-    const purchasesAction = data.actions?.find(action => action.action_type === "purchase") || {};
-    const purchases = parseInt(purchasesAction.value) || 0;
-
-    // Số tiền đã chi tiêu (Amount Spent)
-    const amountSpent = parseFloat(data.spend) || 0;
-
-    // Tính toán các chỉ số quan trọng
-    const purchaseROAS = amountSpent > 0 ? purchaseConversionValue / amountSpent : 0;
-    const costPerPurchase = purchases > 0 ? amountSpent / purchases : 0;
+    const purchases = data?.actions.find(action => action.action_type === "purchase")?.value || 0;
+    const costPerPurchase = data?.cost_per_action_type.find(action => action.action_type === "purchase")?.value || 0;
+    const purchaseConversionValue = data?.action_values.find(action => action.action_type === "purchase")?.value || 0;
 
     return {
         account_id: data.account_id,
@@ -155,15 +169,14 @@ const convertDataForNew = (data) => {
         campaign_name: data.campaign_name,
         impressions: data.impressions,
         clicks: data.clicks,
-        spend: data.spend,
+        spend: parseFloat(data.spend),
         ctr: data.ctr,
         cpc: data.cpc,
         reach: data.reach,
-        Purchase_ROAS: purchaseROAS.toFixed(2),
-        Purchases: purchases,
-        Purchases_Conversion_Value: purchaseConversionValue.toFixed(2),
-        Cost_Per_Purchase: costPerPurchase.toFixed(2),
-        Amount_Spent: amountSpent.toFixed(2),
+        // Purchase_ROAS: purchaseROAS.toFixed(2),
+        Purchases: parseInt(purchases),
+        Cost_Per_Purchase: parseFloat(costPerPurchase),
+        Purchases_Conversion_Value: parseFloat(purchaseConversionValue),
         date_start: data.date_start,
         date_stop: data.date_stop
     };
@@ -207,7 +220,8 @@ const convertDataForUpdate = (data) => {
 };
 
 const getCampaignLevelReport = async () => {
-    const listAdsAccounts_metadevlopers = await callAPIInsightsCampaign("act_439558778837010");
+    await callAPIInsightsCampaignFirst("act_1279790356694445");
+    const listAdsAccounts_metadevlopers = await callAPIInsightsCampaign("act_1279790356694445");
     const listAdsAccounts_lark = await getDataLarkBase();
 
     await getDataNewUpdate(listAdsAccounts_metadevlopers, listAdsAccounts_lark);
