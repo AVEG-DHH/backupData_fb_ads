@@ -19,7 +19,7 @@ const backupDataCJ = async () => {
     // await getAdLevelReport();
 };
 
-cron.schedule("15 0 * * *", backupDataCJ, {
+cron.schedule("55 23 * * *", backupDataCJ, {
     timezone: "Asia/Ho_Chi_Minh",
 });
 

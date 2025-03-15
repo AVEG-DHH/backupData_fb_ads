@@ -10,19 +10,29 @@ let date_start = "";
 let date_stop = "";
 
 const callAPIInsightsCampaignFirst = async (adAccountId) => {
-    const urlInsights = `https://graph.facebook.com/v19.0/${adAccountId}/insights/`;
+    const urlInsights = `https://graph.facebook.com/v19.0/${adAccountId}/campaigns/`;
     try {
         const response = await axios.get(urlInsights, {
             params: {
-                fields: "account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,impressions,clicks,spend,actions,action_values,cost_per_action_type,ctr,cpc,reach,conversion_values",
-                level: "campaign",
+                fields: "id,name,status,start_time,stop_time",
                 access_token: process.env.ACCESS_TOKEN_FB_ADS
             }
         });
-        date_start = response.data.data[0].date_start;
-        date_stop = response.data.data[0].date_stop;
+        const campaigns = response.data.data;
+        date_start = campaigns
+            .map(c => new Date(c.start_time))
+            .reduce((min, date) => (date < min ? date : min))
+            .toISOString().split("T")[0];
+
+        const today = new Date().toISOString().split("T")[0]; // Ngày hiện tại
+        date_stop = campaigns
+            .map(c => c.stop_time ? new Date(c.stop_time) : new Date(today)) // Nếu không có stop_time thì lấy ngày hiện tại
+            .reduce((max, date) => (date > max ? date : max))
+            .toISOString().split("T")[0];
     } catch (error) {
-        console.error(`🚨 Lỗi khi gọi API`, error.response?.data || error.message);
+        console.error(`🚨 Lỗi khi gọi API ${adAccountId}`, error.response?.data || error.message);
+        date_start = "";
+        date_stop = "";
     }
 };
 
@@ -61,15 +71,22 @@ const callAPIInsightsCampaign = async (adAccountId) => {
     return allData;
 };
 
-const LARK_API_FB_ADS = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`;
-const getDataLarkBase = async () => {
+const getDataLarkBase = async (adAccountId) => {
+    let LARK_API_FB_ADS_URL = "";
+    switch (adAccountId) {
+        case "act_439558778837010": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2}/records`; break;
+        case "act_1279790356694445": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`; break;
+        case "act_1085694293046992": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_3}/records`; break;
+        default: LARK_API_FB_ADS_URL = ""; break;
+    }
+
     let allDataLB = [];
     let pageToken = "" || null;
 
     try {
         do {
             const response = await axios.get(
-                `${LARK_API_FB_ADS}`,  // Cập nhật với đường dẫn lấy dữ liệu
+                `${LARK_API_FB_ADS_URL}`,
                 {
                     headers: {
                         Authorization: `Bearer ${LARK_ACCESS_TOKEN}`,
@@ -91,7 +108,7 @@ const getDataLarkBase = async () => {
         // 📌 Nếu token hết hạn (code: 99991663), lấy token mới rồi thử lại
         if (error.response?.data?.code === 99991663 || error.response?.data?.code === 99991661 || error.response?.data?.code === 99991668) {
             LARK_ACCESS_TOKEN = await refreshTokenLark();
-            return getDataLarkBase();
+            return getDataLarkBase(adAccountId);
         }
         throw error;
     }
@@ -135,9 +152,20 @@ const getDataNewUpdate = async (listAdsAccounts_metadevlopers, listAdsAccounts_l
 }
 
 const sendLarkAdsAccountsNew = async (fields) => {
+    console.log("Line 145: ", fields);
+
+    let LARK_API_FB_ADS_URL = "";
+
+    switch (fields.account_id) {
+        case "439558778837010": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2}/records`; break;
+        case "1279790356694445": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`; break;
+        case "1085694293046992": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_3}/records`; break;
+        default: LARK_API_FB_ADS_URL = ""; break;
+    }
+
     try {
         const res = await axios.post(
-            `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`,
+            LARK_API_FB_ADS_URL,
             { fields },
             {
                 headers: {
@@ -158,9 +186,9 @@ const sendLarkAdsAccountsNew = async (fields) => {
 };
 
 const convertDataForNew = (data) => {
-    const purchases = data?.actions.find(action => action.action_type === "purchase")?.value || 0;
-    const costPerPurchase = data?.cost_per_action_type.find(action => action.action_type === "purchase")?.value || 0;
-    const purchaseConversionValue = data?.action_values.find(action => action.action_type === "purchase")?.value || 0;
+    const purchases = data?.actions?.find(action => action.action_type === "purchase")?.value || 0;
+    const costPerPurchase = data?.cost_per_action_type?.find(action => action.action_type === "purchase")?.value || 0;
+    const purchaseConversionValue = data?.action_values?.find(action => action.action_type === "purchase")?.value || 0;
 
     return {
         account_id: data.account_id,
@@ -220,11 +248,36 @@ const convertDataForUpdate = (data) => {
 };
 
 const getCampaignLevelReport = async () => {
-    await callAPIInsightsCampaignFirst("act_1279790356694445");
-    const listAdsAccounts_metadevlopers = await callAPIInsightsCampaign("act_1279790356694445");
-    const listAdsAccounts_lark = await getDataLarkBase();
+    const listAdsAcc = ["act_439558778837010", "act_1279790356694445", "act_1085694293046992"];
+    let listAdsAccounts_metadevlopers = [];
+    let listAdsAccounts_lark = [];
+    for (let i = 0; i < listAdsAcc.length; i++) {
+        await callAPIInsightsCampaignFirst(listAdsAcc[i]);
+        if (date_start != "" || date_stop != "") {
+            console.log("Date start: ", date_start);
+            console.log("Date stop: ", date_stop);
+            listAdsAccounts_metadevlopers = await callAPIInsightsCampaign(listAdsAcc[i]);
+            listAdsAccounts_lark = await getDataLarkBase(listAdsAcc[i]);
+            await getDataNewUpdate(listAdsAccounts_metadevlopers, listAdsAccounts_lark);
 
-    await getDataNewUpdate(listAdsAccounts_metadevlopers, listAdsAccounts_lark);
+            // Add record data New
+            console.log(listNewAdsAccounts.length);
+            if (listNewAdsAccounts.length > 0) {
+                for (var j = 0; j < listNewAdsAccounts.length; j++) {
+                    let data = listNewAdsAccounts[j];
+                    console.log("New: ...", j, " - ", data.account_id);
+                    await sendLarkAdsAccountsNew(convertDataForNew(data));
+                }
+            };
+            listNewAdsAccounts = [];
+        }
+    }
+    return;
+    // await callAPIInsightsCampaignFirst("act_1279790356694445");
+    // const listAdsAccounts_metadevlopers = await callAPIInsightsCampaign("act_1279790356694445");
+    // const listAdsAccounts_lark = await getDataLarkBase();
+
+
 
     // Add record data New
     console.log(listNewAdsAccounts.length);
