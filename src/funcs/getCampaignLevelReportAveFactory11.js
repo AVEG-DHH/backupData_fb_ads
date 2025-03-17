@@ -15,7 +15,7 @@ const callAPIInsightsCampaignFirst = async (adAccountId) => {
         const response = await axios.get(urlInsights, {
             params: {
                 fields: "id,name,status,start_time,stop_time",
-                access_token: process.env.ACCESS_TOKEN_FB_ADS
+                access_token: process.env.ACCESS_TOKEN_FB_ADS_AVE_FACTORY_1_1
             }
         });
         const campaigns = response.data.data;
@@ -53,7 +53,7 @@ const callAPIInsightsCampaign = async (adAccountId) => {
                     fields: "account_id,account_name,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,impressions,clicks,spend,actions,action_values,cost_per_action_type,ctr,cpc,reach,conversion_values",
                     level: "campaign",
                     time_range: JSON.stringify({ "since": date, "until": date }),
-                    access_token: process.env.ACCESS_TOKEN_FB_ADS
+                    access_token: process.env.ACCESS_TOKEN_FB_ADS_AVE_FACTORY_1_1
                 }
             });
 
@@ -74,9 +74,11 @@ const callAPIInsightsCampaign = async (adAccountId) => {
 const getDataLarkBase = async (adAccountId) => {
     let LARK_API_FB_ADS_URL = "";
     switch (adAccountId) {
-        case "act_439558778837010": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2}/records`; break;
-        case "act_1279790356694445": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`; break;
-        case "act_1085694293046992": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_3}/records`; break;
+        case "act_308373675339414": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL}/records`; break;
+        case "act_3825211697804132": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_2}/records`; break;
+        case "act_901356771509158": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_3}/records`; break;
+        case "act_3953794271509013": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_4}/records`; break;
+        case "act_1326984648676532": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_5}/records`; break;
         default: LARK_API_FB_ADS_URL = ""; break;
     }
 
@@ -124,6 +126,9 @@ const convertDataForCheck = (data) => {
             impressions: data.fields.impressions,
             clicks: data.fields.clicks,
             spend: data.fields.spend,
+            Purchases: data.fields.Purchases,
+            Cost_Per_Purchase: data.fields.Cost_Per_Purchase,
+            Purchases_Conversion_Value: data.fields.Purchases_Conversion_Value,
             ctr: data.fields.ctr,
             cpc: data.fields.cpc,
             reach: data.fields.reach,
@@ -141,6 +146,13 @@ const getDataNewUpdate = async (listAdsAccounts_metadevlopers, listAdsAccounts_l
         for (let j = 0; j < listAdsAccounts_lark.length; j++) {
             let dataLB = convertDataForCheck(listAdsAccounts_lark[j]);
             if (dataLB.fields.date_start == dataDevloper.date_start && dataLB.fields.date_stop == dataDevloper.date_stop && dataLB.fields.campaign_id == dataDevloper.campaign_id) {
+                let keysToCheck = ["spend"];
+
+                let hasChanged = keysToCheck.some(key => String(dataLB.fields[key] || "") !== String(dataDevloper[key] || ""));
+
+                if (hasChanged) {
+                    listUpdateAdsAccounts.push({ ...dataDevloper, record_id: dataLB.record_id });
+                };
                 break;
             };
 
@@ -155,9 +167,11 @@ const sendLarkAdsAccountsNew = async (fields) => {
     let LARK_API_FB_ADS_URL = "";
 
     switch (fields.account_id) {
-        case "439558778837010": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2}/records`; break;
-        case "1279790356694445": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`; break;
-        case "1085694293046992": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_3}/records`; break;
+        case "308373675339414": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL}/records`; break;
+        case "3825211697804132": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_2}/records`; break;
+        case "901356771509158": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_3}/records`; break;
+        case "3953794271509013": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_4}/records`; break;
+        case "1326984648676532": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_5}/records`; break;
         default: LARK_API_FB_ADS_URL = ""; break;
     }
 
@@ -174,6 +188,7 @@ const sendLarkAdsAccountsNew = async (fields) => {
         );
         return res;
     } catch (error) {
+        console.error(`🚨 Lỗi khi gửi dữ liệu lên Lark`, error.response?.data || error.message);
         // 📌 Nếu token hết hạn (code: 99991663), lấy token mới rồi thử lại
         if (error.response?.data?.code === 99991663 || error.response?.data?.code === 99991661 || error.response?.data?.code === 99991668) {
             LARK_ACCESS_TOKEN = await refreshTokenLark();
@@ -212,9 +227,11 @@ const sendLarkAdsAccountsUpdate = async (fields) => {
     let LARK_API_FB_ADS_URL = "";
 
     switch (fields.dataFields.account_id) {
-        case "439558778837010": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2}/records`; break;
-        case "1279790356694445": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_2}/records`; break;
-        case "1085694293046992": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_1_2_3}/records`; break;
+        case "308373675339414": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL}/records`; break;
+        case "3825211697804132": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_2}/records`; break;
+        case "901356771509158": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_3}/records`; break;
+        case "3953794271509013": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_4}/records`; break;
+        case "1326984648676532": LARK_API_FB_ADS_URL = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_INSIGHT_CAMPAIGN_AVE_FACTORY_1_1_AVE_GLOBAL_5}/records`; break;
         default: LARK_API_FB_ADS_URL = ""; break;
     }
 
@@ -243,7 +260,6 @@ const convertDataForUpdate = (data) => {
     const purchases = data?.actions?.find(action => action.action_type === "purchase")?.value || 0;
     const costPerPurchase = data?.cost_per_action_type?.find(action => action.action_type === "purchase")?.value || 0;
     const purchaseConversionValue = data?.action_values?.find(action => action.action_type === "purchase")?.value || 0;
-
     return {
         dataFields: {
             account_id: data.account_id,
@@ -267,13 +283,15 @@ const convertDataForUpdate = (data) => {
     }
 };
 
-const getCampaignLevelReport = async () => {
-    const listAdsAcc = ["act_439558778837010", "act_1279790356694445", "act_1085694293046992"];
+const getCampaignLevelReportAveFactory11 = async () => {
+    const listAdsAcc = ["act_308373675339414", "act_3825211697804132", "act_901356771509158", "act_3953794271509013", "act_1326984648676532"];
+
     let listAdsAccounts_metadevlopers = [];
     let listAdsAccounts_lark = [];
     for (let i = 0; i < listAdsAcc.length; i++) {
         await callAPIInsightsCampaignFirst(listAdsAcc[i]);
         if (date_start != "" || date_stop != "") {
+            console.log("Account: ", listAdsAcc[i]);
             console.log("Date start: ", date_start);
             console.log("Date stop: ", date_stop);
             listAdsAccounts_metadevlopers = await callAPIInsightsCampaign(listAdsAcc[i]);
@@ -304,4 +322,4 @@ const getCampaignLevelReport = async () => {
     }
 };
 
-module.exports = getCampaignLevelReport;
+module.exports = getCampaignLevelReportAveFactory11;

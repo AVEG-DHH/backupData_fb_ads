@@ -20,6 +20,20 @@ const callAPIListAdsAcc = async () => {
     }
 };
 
+const callAPIListAdsAccAveFactory11 = async () => {
+    try {
+        const response = await axios.get(process.env.URL_ADS_ACCOUNTS, {
+            params: {
+                fields: "id,name,account_status,currency,amount_spent,business",
+                access_token: process.env.ACCESS_TOKEN_FB_ADS_AVE_FACTORY_1_1
+            }
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error('Lỗi khi gọi Shopify API:', error.response?.data || error.message);
+    }
+};
+
 const LARK_API_FB_ADS = `https://open.larksuite.com/open-apis/bitable/v1/apps/${process.env.LARK_APP_TOKEN_FB_ADS}/tables/${process.env.LARK_TABLE_ID_FB_ADS_ADS_ACCOUNTS}/records`;
 const getDataLarkBase = async () => {
     let allDataLB = [];
@@ -171,12 +185,14 @@ const convertDataForUpdate = (data) => {
 
 const getListAdsAccount = async () => {
     const listAdsAccounts_metadevlopers = await callAPIListAdsAcc();
+    const listAdsAccounts_metadevlopersAveFactory11 = await callAPIListAdsAccAveFactory11();
+    listAdsAccounts_metadevlopers.push(...listAdsAccounts_metadevlopersAveFactory11);
+
     const listAdsAccounts_lark = await getDataLarkBase();
 
     await getDataNewUpdate(listAdsAccounts_metadevlopers, listAdsAccounts_lark);
 
     // Add record data New
-    console.log(listNewAdsAccounts.length);
     if (listNewAdsAccounts.length > 0) {
         for (var j = 0; j < listNewAdsAccounts.length; j++) {
             let data = listNewAdsAccounts[j];
@@ -186,7 +202,6 @@ const getListAdsAccount = async () => {
     }
 
     // Update record data
-    console.log(listUpdateAdsAccounts.length);
     if (listUpdateAdsAccounts.length > 0) {
         for (var j = 0; j < listUpdateAdsAccounts.length; j++) {
             let data = listUpdateAdsAccounts[j];
@@ -194,6 +209,8 @@ const getListAdsAccount = async () => {
             await sendLarkAdsAccountsUpdate(convertDataForUpdate(data));
         }
     }
+    console.log(listNewAdsAccounts.length);
+    console.log(listUpdateAdsAccounts.length);
 };
 
 module.exports = getListAdsAccount;
