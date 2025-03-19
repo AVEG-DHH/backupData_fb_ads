@@ -16,7 +16,7 @@ const callAPIListAdsAcc = async () => {
         });
         return response.data.data;
     } catch (error) {
-        console.error('Lỗi khi gọi Shopify API:', error.response?.data || error.message);
+        console.error('Lỗi khi gọi API của BM AVE 1.2:', error.response?.data || error.message);
     }
 };
 
@@ -30,7 +30,7 @@ const callAPIListAdsAccAveFactory11 = async () => {
         });
         return response.data.data;
     } catch (error) {
-        console.error('Lỗi khi gọi Shopify API:', error.response?.data || error.message);
+        console.error('Lỗi khi gọi API của BM Factory AVE 1.1:', error.response?.data || error.message);
     }
 };
 
